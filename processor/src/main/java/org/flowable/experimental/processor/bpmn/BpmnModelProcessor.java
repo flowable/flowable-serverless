@@ -8,10 +8,13 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.ProcessingEnvironment;
@@ -27,6 +30,7 @@ import javax.tools.StandardLocation;
 import org.flowable.bpmn.converter.BpmnXMLConverter;
 import org.flowable.bpmn.model.BpmnModel;
 import org.flowable.experimental.bpmn.Bpmn;
+import org.flowable.experimental.bpmn.BpmnModels;
 
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeSpec;
@@ -52,6 +56,11 @@ public class BpmnModelProcessor extends AbstractProcessor {
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
 
         Set<? extends Element> bpmnElements = roundEnv.getElementsAnnotatedWith(Bpmn.class);
+        for (Element element : bpmnElements) {
+            processElement(element);
+        }
+
+        bpmnElements = roundEnv.getElementsAnnotatedWith(BpmnModels.class);
         for (Element element : bpmnElements) {
             processElement(element);
         }
@@ -128,23 +137,56 @@ public class BpmnModelProcessor extends AbstractProcessor {
         for (AnnotationMirror annotation : element.getAnnotationMirrors()) {
             if (annotation.getAnnotationType().toString().equals("org.flowable.experimental.bpmn.Bpmn")) {
                 getResource(annotation).ifPresent(bpmnResources::add);
+            } else if (annotation.getAnnotationType().toString().equals("org.flowable.experimental.bpmn.BpmnModels")) {
+                bpmnResources.addAll(getResourcesFromBpmnModels(annotation));
             }
         }
 
         return bpmnResources;
     }
 
+    private List<String> getResourcesFromBpmnModels(AnnotationMirror annotationMirror) {
+        return extractValue(annotationMirror, "value")
+            .flatMap(this::getBpmn)
+            .map(this::getResource)
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .collect(Collectors.toList());
+    }
+
+    private Stream<AnnotationMirror> getBpmn(AnnotationValue annotationValue) {
+        if (annotationValue == null) {
+            return Stream.empty();
+        }
+
+        Object value = annotationValue.getValue();
+        if (value instanceof List) {
+            return ((List<AnnotationMirror>) value).stream();
+        }
+
+        return Stream.of((AnnotationMirror) value);
+    }
+
     private Optional<String> getResource(AnnotationMirror annotation) {
+        return extractValue(annotation, "resource")
+            .map(this::getBpmnResource)
+            .findAny();
+    }
+
+    private String getBpmnResource(AnnotationValue annotationValue) {
+        if (annotationValue == null) {
+            return null;
+        }
+
+        return annotationValue.getValue().toString();
+    }
+
+    private Stream<AnnotationValue> extractValue(AnnotationMirror annotation, String valueName) {
         return annotation.getElementValues()
             .entrySet()
             .stream()
-            .filter(entry -> entry.getKey().getSimpleName().toString().equals("resource"))
-            .map(Map.Entry::getValue)
-            .filter(Objects::nonNull)
-            .map(AnnotationValue::getValue)
-            .filter(Objects::nonNull)
-            .map(Object::toString)
-            .findAny();
+            .filter(entry -> entry.getKey().getSimpleName().toString().equals(valueName))
+            .map(Map.Entry::getValue);
     }
 
 }

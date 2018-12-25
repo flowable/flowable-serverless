@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:flowable="http://flowable.org/bpmn"
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC"
+             xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" typeLanguage="http://www.w3.org/2001/XMLSchema"
+             xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL http://www.omg.org/spec/BPMN/2.0/20100501/BPMN20.xsd http://www.omg.org/spec/BPMN/20100524/DI http://www.omg.org/spec/BPMN/2.0/20100501/BPMNDI.xsd http://www.omg.org/spec/DD/20100524/DC http://www.omg.org/spec/BPMN/2.0/20100501/DC.xsd http://www.omg.org/spec/DD/20100524/DI http://www.omg.org/spec/BPMN/2.0/20100501/DI.xsd "
+             expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="http://www.flowable.org/processdef">
+    <process id="proc-two-async-tasks" name="Process Two Async Tasks" isExecutable="true">
+        <startEvent id="startEvent1" flowable:initiator="initiator"/>
+        <scriptTask id="sid-8CE84952-C1A8-47E9-9CCC-49388AE9DE12" name="Async Task 1" flowable:async="true" flowable:exclusive="false" scriptFormat="groovy"
+                    flowable:autoStoreVariables="false">
+            <script><![CDATA[println "Hello from Task1"]]></script>
+        </scriptTask>
+        <sequenceFlow id="sid-DDD47CA2-57F7-4935-BEEE-ECED8D22C401" sourceRef="startEvent1" targetRef="sid-8CE84952-C1A8-47E9-9CCC-49388AE9DE12"/>
+        <endEvent id="sid-63150626-E4D4-4C41-A38C-FBBDA7278895"/>
+        <scriptTask id="sid-7F4E3357-40FD-469E-91F5-F9A6852E4D36" name="Async Task 2" scriptFormat="groovy" flowable:autoStoreVariables="false">
+            <script><![CDATA[println "Hello from Task2"]]></script>
+        </scriptTask>
+        <sequenceFlow id="sid-3CCF249E-EC61-401A-96A2-2CE4EFADB96E" sourceRef="sid-8CE84952-C1A8-47E9-9CCC-49388AE9DE12"
+                      targetRef="sid-7F4E3357-40FD-469E-91F5-F9A6852E4D36"/>
+        <sequenceFlow id="sid-7455D660-5193-4438-A7CC-4A8C0FA91C4A" sourceRef="sid-7F4E3357-40FD-469E-91F5-F9A6852E4D36"
+                      targetRef="sid-63150626-E4D4-4C41-A38C-FBBDA7278895"/>
+    </process>
+    <bpmndi:BPMNDiagram id="BPMNDiagram_proc-two-async-tasks">
+        <bpmndi:BPMNPlane bpmnElement="proc-two-async-tasks" id="BPMNPlane_proc-two-async-tasks">
+            <bpmndi:BPMNShape bpmnElement="startEvent1" id="BPMNShape_startEvent1">
+                <omgdc:Bounds height="30.0" width="30.0" x="90.00000000000001" y="150.00000000000003"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="sid-8CE84952-C1A8-47E9-9CCC-49388AE9DE12" id="BPMNShape_sid-8CE84952-C1A8-47E9-9CCC-49388AE9DE12">
+                <omgdc:Bounds height="80.00000000000001" width="99.99999999999997" x="180.00000000000003" y="125.00000000000004"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="sid-63150626-E4D4-4C41-A38C-FBBDA7278895" id="BPMNShape_sid-63150626-E4D4-4C41-A38C-FBBDA7278895">
+                <omgdc:Bounds height="28.0" width="28.0" x="480.00000000000006" y="151.00000000000009"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="sid-7F4E3357-40FD-469E-91F5-F9A6852E4D36" id="BPMNShape_sid-7F4E3357-40FD-469E-91F5-F9A6852E4D36">
+                <omgdc:Bounds height="79.99999999999999" width="100.0" x="330.0000000000001" y="125.0000000000001"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNEdge bpmnElement="sid-7455D660-5193-4438-A7CC-4A8C0FA91C4A" id="BPMNEdge_sid-7455D660-5193-4438-A7CC-4A8C0FA91C4A">
+                <omgdi:waypoint x="429.95000000000016" y="165.00000000000009"/>
+                <omgdi:waypoint x="480.00000000000006" y="165.00000000000009"/>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="sid-3CCF249E-EC61-401A-96A2-2CE4EFADB96E" id="BPMNEdge_sid-3CCF249E-EC61-401A-96A2-2CE4EFADB96E">
+                <omgdi:waypoint x="279.95000000000005" y="165.00000000000006"/>
+                <omgdi:waypoint x="230.00000000000003" y="165.00000000000006"/>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="sid-DDD47CA2-57F7-4935-BEEE-ECED8D22C401" id="BPMNEdge_sid-DDD47CA2-57F7-4935-BEEE-ECED8D22C401">
+                <omgdi:waypoint x="119.94999883049306" y="165.00000000000003"/>
+                <omgdi:waypoint x="180.00000000000003" y="165.00000000000006"/>
+            </bpmndi:BPMNEdge>
+        </bpmndi:BPMNPlane>
+    </bpmndi:BPMNDiagram>
+</definitions>

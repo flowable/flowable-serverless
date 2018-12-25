@@ -9,6 +9,7 @@ import java.util.Map;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Modifier;
 
+import org.flowable.bpmn.model.AdhocSubProcess;
 import org.flowable.bpmn.model.BoundaryEvent;
 import org.flowable.bpmn.model.BpmnModel;
 import org.flowable.bpmn.model.Event;
@@ -21,7 +22,9 @@ import org.flowable.bpmn.model.Process;
 import org.flowable.bpmn.model.ReceiveTask;
 import org.flowable.bpmn.model.ScriptTask;
 import org.flowable.bpmn.model.SequenceFlow;
+import org.flowable.bpmn.model.ServiceTask;
 import org.flowable.bpmn.model.StartEvent;
+import org.flowable.bpmn.model.SubProcess;
 import org.flowable.bpmn.model.Task;
 import org.flowable.bpmn.model.UserTask;
 import org.flowable.common.engine.api.FlowableIllegalArgumentException;
@@ -43,7 +46,7 @@ public class BpmnModelCreator {
     public TypeSpec createType(BpmnModel bpmnModel) {
         String mainProcessId = bpmnModel.getMainProcess().getId();
 
-        String cleanProcessName = capitalize(cleanNameFromId(mainProcessId));
+        String cleanProcessName = cleanNameFromId(mainProcessId);
         MethodSpec.Builder bpmnModelMethodBuilder = MethodSpec.methodBuilder("create" + cleanProcessName + "BpmnModel")
             .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
             .returns(BpmnModel.class)
@@ -72,7 +75,7 @@ public class BpmnModelCreator {
     }
 
     protected MethodSpec createProcess(Process process, Map<String, MethodSpec> sharedMethods) {
-        MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("create" + capitalize(cleanNameFromId(process.getId())) + "Process")
+        MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("create" + cleanNameFromId(process.getId()) + "Process")
             .addModifiers(Modifier.PROTECTED, Modifier.STATIC)
             .returns(Process.class)
             .addStatement("$1T process = new $1T()", Process.class)
@@ -125,6 +128,48 @@ public class BpmnModelCreator {
             .build();
     }
 
+    protected MethodSpec createSubProcess(SubProcess subProcess, Map<String, MethodSpec> sharedMethods) {
+        MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("create" + cleanNameFromId(subProcess.getId()) + "SubProcess")
+            .addModifiers(Modifier.PROTECTED, Modifier.STATIC)
+            .returns(subProcess.getClass())
+            .addStatement("$1T subProcess = new $1T()", subProcess.getClass())
+            .addCode("\n")
+            .addStatement("subProcess.setId($S)", subProcess.getId())
+            .addStatement("subProcess.setName($S)", subProcess.getName())
+            .addStatement("subProcess.setDocumentation($S)", subProcess.getDocumentation())
+
+            .addStatement("subProcess.setAsynchronous($L)", subProcess.isAsynchronous())
+            .addStatement("subProcess.setExclusive($L)", subProcess.isExclusive())
+
+            .addStatement("subProcess.setDefaultFlow($S)", subProcess.getDefaultFlow())
+            .addStatement("subProcess.setForCompensation($L)", subProcess.isForCompensation())
+
+
+            .addStatement("subProcess.setXmlRowNumber($L)", subProcess.getXmlRowNumber())
+            .addStatement("subProcess.setXmlColumnNumber($L)", subProcess.getXmlColumnNumber())
+            .addCode("\n");
+
+        if (subProcess instanceof AdhocSubProcess) {
+            AdhocSubProcess adhocSubProcess = (AdhocSubProcess) subProcess;
+            methodBuilder
+                .addStatement("subProcess.setCompletionCondition($S)", adhocSubProcess.getCompletionCondition())
+                .addStatement("subProcess.setOrdering($S)", adhocSubProcess.getOrdering())
+                .addStatement("subProcess.setCancelRemainingInstances($L)", adhocSubProcess.isCancelRemainingInstances())
+                .addCode("\n");
+        }
+
+        for (FlowElement flowElement : subProcess.getFlowElements()) {
+            addFlowElement(flowElement, methodBuilder, "subProcess", sharedMethods);
+        }
+        methodBuilder.addCode("\n");
+
+        // TODO dataObjects
+        // TODO artifactList
+        return methodBuilder
+            .addStatement("return subProcess")
+            .build();
+    }
+
     protected MethodSpec createExtensionAttributeMethod() {
         return MethodSpec.methodBuilder("createExtensionAttribute")
             .addModifiers(Modifier.PROTECTED, Modifier.STATIC)
@@ -162,6 +207,8 @@ public class BpmnModelCreator {
             addTaskFlowElement((Task) flowElement, methodBuilder, elementName, sharedMethods);
         } else if (flowElement instanceof Gateway) {
             addGatewayFlowElement((Gateway) flowElement, methodBuilder, elementName, sharedMethods);
+        } else if (flowElement instanceof SubProcess) {
+            addSubProcessFlowElement((SubProcess) flowElement, methodBuilder, elementName, sharedMethods);
         } else {
             throw new FlowableIllegalArgumentException("Unsupported flow type " + flowElement.getClass());
         }
@@ -176,7 +223,23 @@ public class BpmnModelCreator {
                 startEvent.isExclusive(), startEvent.getInitiator(), startEvent.getFormKey(), startEvent.isInterrupting(), startEvent.getXmlRowNumber(),
                 startEvent.getXmlColumnNumber());
         } else if (event instanceof BoundaryEvent) {
-            throw new IllegalArgumentException("BoundaryEvent not implemented yet");
+            BoundaryEvent boundaryEvent = (BoundaryEvent) event;
+            MethodSpec createBoundaryEventMethodSpec = sharedMethods
+                .computeIfAbsent("createBoundaryEventFlowElement", this::createBoundaryEventFlowElement);
+            methodBuilder.addStatement("$L.addFlowElement($N($S, $S, $S, $S, $L, $L, $L, $L, $L))",
+                elementName, createBoundaryEventMethodSpec,
+                boundaryEvent.getId(),
+                boundaryEvent.getName(),
+                boundaryEvent.getDocumentation(),
+
+                boundaryEvent.getAttachedToRefId(),
+                boundaryEvent.isCancelActivity(),
+
+                boundaryEvent.isAsynchronous(),
+                boundaryEvent.isExclusive(),
+                boundaryEvent.getXmlRowNumber(),
+                boundaryEvent.getXmlColumnNumber()
+            );
         } else {
             Class<? extends Event> eventCLass = event.getClass();
             MethodSpec createEventMethodSpec = sharedMethods
@@ -247,8 +310,44 @@ public class BpmnModelCreator {
                 taskFlow.getXmlRowNumber(),
                 taskFlow.getXmlColumnNumber()
             );
+        } else if (taskFlow instanceof ServiceTask) {
+            addServiceTaskFlowElement((ServiceTask) taskFlow, methodBuilder, elementName, sharedMethods);
         } else {
             throw new IllegalArgumentException("Task of type " + taskFlow.getClass() + " is not supported");
+        }
+    }
+
+    protected void addServiceTaskFlowElement(ServiceTask serviceTaskFlow, MethodSpec.Builder methodBuilder, String elementName,
+        Map<String, MethodSpec> sharedMethods) {
+        if (serviceTaskFlow.getClass().equals(ServiceTask.class)) {
+            MethodSpec createServiceTaskMethod = sharedMethods
+                .computeIfAbsent("createServiceTaskFlow", this::createServiceTaskFlowElement);
+            methodBuilder.addStatement("$L.addFlowElement($N($S, $S, $S, $S, $S, $S, $S, $S, $S, $S, $L, $L, $L, $L, $S, $L, $L, $L))",
+                elementName, createServiceTaskMethod,
+                serviceTaskFlow.getId(),
+                serviceTaskFlow.getName(),
+                serviceTaskFlow.getDocumentation(),
+
+                serviceTaskFlow.getImplementation(),
+                serviceTaskFlow.getImplementationType(),
+                serviceTaskFlow.getResultVariableName(),
+                serviceTaskFlow.getType(),
+                serviceTaskFlow.getOperationRef(),
+                serviceTaskFlow.getExtensionId(),
+                serviceTaskFlow.getSkipExpression(),
+                serviceTaskFlow.isUseLocalScopeForResultVariable(),
+                serviceTaskFlow.isTriggerable(),
+
+                serviceTaskFlow.isAsynchronous(),
+                serviceTaskFlow.isExclusive(),
+                serviceTaskFlow.getDefaultFlow(),
+                serviceTaskFlow.isForCompensation(),
+                serviceTaskFlow.getXmlRowNumber(),
+                serviceTaskFlow.getXmlColumnNumber()
+            );
+        } else {
+            // using equals for the class as it is easy to make a mistake with different extensions of a ServiceTask
+            throw new FlowableIllegalArgumentException("Service task type " + serviceTaskFlow.getClass() + " not yet supported");
         }
     }
 
@@ -268,6 +367,14 @@ public class BpmnModelCreator {
             gatewayFlow.getXmlRowNumber(),
             gatewayFlow.getXmlColumnNumber()
         );
+    }
+
+    protected void addSubProcessFlowElement(SubProcess subProcess, MethodSpec.Builder methodBuilder, String elementName,
+        Map<String, MethodSpec> sharedMethods) {
+
+        MethodSpec subProcessMethodSpec = createSubProcess(subProcess, sharedMethods);
+        methodBuilder.addStatement("$L.addFlowElement($N())", elementName, subProcessMethodSpec);
+        sharedMethods.put(subProcessMethodSpec.name, subProcessMethodSpec);
     }
 
     protected MethodSpec createStartEventFlowElement(String methodName) {
@@ -296,6 +403,34 @@ public class BpmnModelCreator {
             .addStatement("startEvent.setXmlRowNumber(xmlRowNumber)")
             .addStatement("startEvent.setXmlColumnNumber(xmlColumnNumber)")
             .addStatement("return startEvent")
+            .build();
+
+    }
+
+    protected MethodSpec createBoundaryEventFlowElement(String methodName) {
+        return MethodSpec.methodBuilder(methodName)
+            .addModifiers(Modifier.PROTECTED, Modifier.STATIC)
+            .returns(BoundaryEvent.class)
+            .addParameter(String.class, "id")
+            .addParameter(String.class, "name")
+            .addParameter(String.class, "documentation")
+
+            .addParameter(String.class, "attachedToRefId")
+            .addParameter(boolean.class, "cancelActivity")
+
+            .addParameter(boolean.class, "asynchronous")
+            .addParameter(boolean.class, "exclusive")
+            .addParameter(int.class, "xmlRowNumber")
+            .addParameter(int.class, "xmlColumnNumber")
+            .addStatement("$1T event = new $1T()", BoundaryEvent.class)
+            .addStatement("event.setId(id)")
+            .addStatement("event.setName(name)")
+            .addStatement("event.setDocumentation(documentation)")
+            .addStatement("event.setAsynchronous(asynchronous)")
+            .addStatement("event.setExclusive(exclusive)")
+            .addStatement("event.setXmlRowNumber(xmlRowNumber)")
+            .addStatement("event.setXmlColumnNumber(xmlColumnNumber)")
+            .addStatement("return event")
             .build();
 
     }
@@ -411,6 +546,55 @@ public class BpmnModelCreator {
             .build();
     }
 
+    protected MethodSpec createServiceTaskFlowElement(String methodName) {
+        return MethodSpec.methodBuilder(methodName)
+            .addModifiers(Modifier.PROTECTED, Modifier.STATIC)
+            .returns(ServiceTask.class)
+            .addParameter(String.class, "id")
+            .addParameter(String.class, "name")
+            .addParameter(String.class, "documentation")
+
+            .addParameter(String.class, "implementation")
+            .addParameter(String.class, "implementationType")
+            .addParameter(String.class, "resultVariableName")
+            .addParameter(String.class, "type")
+            .addParameter(String.class, "operationRef")
+            .addParameter(String.class, "extensionId")
+            .addParameter(String.class, "skipExpression")
+            .addParameter(boolean.class, "useLocalScopeForResultVariable")
+            .addParameter(boolean.class, "triggerable")
+
+            .addParameter(boolean.class, "asynchronous")
+            .addParameter(boolean.class, "exclusive")
+            .addParameter(String.class, "defaultFlow")
+            .addParameter(boolean.class, "forCompensation")
+            .addParameter(int.class, "xmlRowNumber")
+            .addParameter(int.class, "xmlColumnNumber")
+            .addStatement("$1T serviceTask = new $1T()", ServiceTask.class)
+            .addStatement("serviceTask.setId(id)")
+            .addStatement("serviceTask.setName(name)")
+            .addStatement("serviceTask.setDocumentation(documentation)")
+
+            .addStatement("serviceTask.setImplementation(implementation)")
+            .addStatement("serviceTask.setImplementationType(implementationType)")
+            .addStatement("serviceTask.setResultVariableName(resultVariableName)")
+            .addStatement("serviceTask.setType(type)")
+            .addStatement("serviceTask.setOperationRef(operationRef)")
+            .addStatement("serviceTask.setExtensionId(extensionId)")
+            .addStatement("serviceTask.setSkipExpression(skipExpression)")
+            .addStatement("serviceTask.setUseLocalScopeForResultVariable(useLocalScopeForResultVariable)")
+            .addStatement("serviceTask.setTriggerable(triggerable)")
+
+            .addStatement("serviceTask.setAsynchronous(asynchronous)")
+            .addStatement("serviceTask.setExclusive(exclusive)")
+            .addStatement("serviceTask.setDefaultFlow(defaultFlow)")
+            .addStatement("serviceTask.setForCompensation(forCompensation)")
+            .addStatement("serviceTask.setXmlRowNumber(xmlRowNumber)")
+            .addStatement("serviceTask.setXmlColumnNumber(xmlColumnNumber)")
+            .addStatement("return serviceTask")
+            .build();
+    }
+
     protected MethodSpec createBaseGatewayFlowElement(String methodName, Class<? extends Gateway> gatewayClass) {
         return MethodSpec.methodBuilder(methodName)
             .addModifiers(Modifier.PROTECTED, Modifier.STATIC)
@@ -486,6 +670,11 @@ public class BpmnModelCreator {
     }
 
     protected static String cleanNameFromId(String id) {
-        return id.replaceAll("[-_.]", "");
+        StringBuilder builder = new StringBuilder(id.length());
+        for (String part : id.split("[-_.]")) {
+            builder.append(capitalize(part));
+        }
+
+        return builder.toString();
     }
 }

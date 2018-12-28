@@ -12,6 +12,7 @@ import javax.lang.model.element.Modifier;
 import org.flowable.bpmn.model.AdhocSubProcess;
 import org.flowable.bpmn.model.BoundaryEvent;
 import org.flowable.bpmn.model.BpmnModel;
+import org.flowable.bpmn.model.EndEvent;
 import org.flowable.bpmn.model.Event;
 import org.flowable.bpmn.model.ExtensionAttribute;
 import org.flowable.bpmn.model.FlowElement;
@@ -28,6 +29,9 @@ import org.flowable.bpmn.model.SubProcess;
 import org.flowable.bpmn.model.Task;
 import org.flowable.bpmn.model.UserTask;
 import org.flowable.common.engine.api.FlowableIllegalArgumentException;
+import org.flowable.engine.impl.bpmn.behavior.NoneEndEventActivityBehavior;
+import org.flowable.engine.impl.bpmn.behavior.NoneStartEventActivityBehavior;
+import org.flowable.engine.impl.bpmn.helper.ClassDelegate;
 
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
@@ -218,10 +222,17 @@ public class BpmnModelCreator {
         if (event instanceof StartEvent) {
             StartEvent startEvent = (StartEvent) event;
             MethodSpec createStartEventMethodSpec = sharedMethods.computeIfAbsent("createStartEventFlowElement", this::createStartEventFlowElement);
-            methodBuilder.addStatement("$L.addFlowElement($N($S, $S, $S, $L, $L, $S, $S, $L, $L, $L))",
-                elementName, createStartEventMethodSpec, startEvent.getId(), startEvent.getName(), startEvent.getDocumentation(), startEvent.isAsynchronous(),
+            methodBuilder.addStatement("$T startEvent = $N($S, $S, $S, $L, $L, $S, $S, $L, $L, $L)",
+                StartEvent.class, createStartEventMethodSpec, startEvent.getId(), startEvent.getName(), startEvent.getDocumentation(), startEvent.isAsynchronous(),
                 startEvent.isExclusive(), startEvent.getInitiator(), startEvent.getFormKey(), startEvent.isInterrupting(), startEvent.getXmlRowNumber(),
                 startEvent.getXmlColumnNumber());
+
+            // TODO: better way to handle process vs subprocess
+            if ("process".equals(elementName)) {
+                methodBuilder.addStatement("$L.setInitialFlowElement(startEvent)", elementName);
+            }
+            methodBuilder.addStatement("$L.addFlowElement(startEvent)", elementName);
+
         } else if (event instanceof BoundaryEvent) {
             BoundaryEvent boundaryEvent = (BoundaryEvent) event;
             MethodSpec createBoundaryEventMethodSpec = sharedMethods
@@ -240,6 +251,14 @@ public class BpmnModelCreator {
                 boundaryEvent.getXmlRowNumber(),
                 boundaryEvent.getXmlColumnNumber()
             );
+
+        } else if (event instanceof EndEvent) {
+            EndEvent endEvent = (EndEvent) event;
+            MethodSpec createEndEventMethodSpec = sharedMethods.computeIfAbsent("createEndEventFlowElement", this::createEndEventFlowElement);
+            methodBuilder.addStatement("$L.addFlowElement($N($S, $S, $S, $L, $L, $L, $L))",
+                elementName, createEndEventMethodSpec, endEvent.getId(), endEvent.getName(), endEvent.getDocumentation(), endEvent.isAsynchronous(),
+                endEvent.isExclusive(), endEvent.getXmlRowNumber(), endEvent.getXmlColumnNumber());
+
         } else {
             Class<? extends Event> eventCLass = event.getClass();
             MethodSpec createEventMethodSpec = sharedMethods
@@ -402,7 +421,37 @@ public class BpmnModelCreator {
             .addStatement("startEvent.setInterrupting(interrupting)")
             .addStatement("startEvent.setXmlRowNumber(xmlRowNumber)")
             .addStatement("startEvent.setXmlColumnNumber(xmlColumnNumber)")
+
+            .addStatement("startEvent.setBehavior(new $1T())", NoneStartEventActivityBehavior.class) // TODO: not the proper place - don't really want the dependency on flowable-engine?
+
             .addStatement("return startEvent")
+            .build();
+
+    }
+
+    protected MethodSpec createEndEventFlowElement(String methodName) {
+        return MethodSpec.methodBuilder(methodName)
+            .addModifiers(Modifier.PROTECTED, Modifier.STATIC)
+            .returns(EndEvent.class)
+            .addParameter(String.class, "id")
+            .addParameter(String.class, "name")
+            .addParameter(String.class, "documentation")
+            .addParameter(boolean.class, "asynchronous")
+            .addParameter(boolean.class, "exclusive")
+            .addParameter(int.class, "xmlRowNumber")
+            .addParameter(int.class, "xmlColumnNumber")
+            .addStatement("$1T endEvent = new $1T()", EndEvent.class)
+            .addStatement("endEvent.setId(id)")
+            .addStatement("endEvent.setName(name)")
+            .addStatement("endEvent.setDocumentation(documentation)")
+            .addStatement("endEvent.setAsynchronous(asynchronous)")
+            .addStatement("endEvent.setExclusive(exclusive)")
+            .addStatement("endEvent.setXmlRowNumber(xmlRowNumber)")
+            .addStatement("endEvent.setXmlColumnNumber(xmlColumnNumber)")
+
+            .addStatement("endEvent.setBehavior(new $1T())", NoneEndEventActivityBehavior.class) // TODO: not the proper place - don't really want the dependency on flowable-engine?
+
+            .addStatement("return endEvent")
             .build();
 
     }
@@ -472,14 +521,14 @@ public class BpmnModelCreator {
             .addParameter(String.class, "skipExpression")
             .addParameter(int.class, "xmlRowNumber")
             .addParameter(int.class, "xmlColumnNumber")
-            .addStatement("$1T startEvent = new $1T(sourceRef, targetRef)", SequenceFlow.class)
-            .addStatement("startEvent.setId(id)")
-            .addStatement("startEvent.setName(name)")
-            .addStatement("startEvent.setDocumentation(documentation)")
-            .addStatement("startEvent.setConditionExpression(conditionExpression)")
-            .addStatement("startEvent.setXmlRowNumber(xmlRowNumber)")
-            .addStatement("startEvent.setXmlColumnNumber(xmlColumnNumber)")
-            .addStatement("return startEvent")
+            .addStatement("$1T sequenceFlow = new $1T(sourceRef, targetRef)", SequenceFlow.class)
+            .addStatement("sequenceFlow.setId(id)")
+            .addStatement("sequenceFlow.setName(name)")
+            .addStatement("sequenceFlow.setDocumentation(documentation)")
+            .addStatement("sequenceFlow.setConditionExpression(conditionExpression)")
+            .addStatement("sequenceFlow.setXmlRowNumber(xmlRowNumber)")
+            .addStatement("sequenceFlow.setXmlColumnNumber(xmlColumnNumber)")
+            .addStatement("return sequenceFlow")
             .build();
 
     }
@@ -591,6 +640,10 @@ public class BpmnModelCreator {
             .addStatement("serviceTask.setForCompensation(forCompensation)")
             .addStatement("serviceTask.setXmlRowNumber(xmlRowNumber)")
             .addStatement("serviceTask.setXmlColumnNumber(xmlColumnNumber)")
+
+            // TODO: only supporting class at the moment
+            .addStatement("serviceTask.setBehavior(new $T(serviceTask.getImplementation(), java.util.Collections.emptyList()))", ClassDelegate.class) // TODO: not the proper place - don't really want the dependency on flowable-engine?
+
             .addStatement("return serviceTask")
             .build();
     }

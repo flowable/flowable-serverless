@@ -84,6 +84,7 @@ public class BpmnModelCreator {
             .returns(Process.class)
             .addStatement("$1T process = new $1T()", Process.class)
             .addCode("\n")
+            .addStatement("process.setEnableEagerExecutionTreeFetching($L)", process.isEnableEagerExecutionTreeFetching())
             .addStatement("process.setId($S)", process.getId())
             .addStatement("process.setName($S)", process.getName())
             .addStatement("process.setExecutable($L)", process.isExecutable())

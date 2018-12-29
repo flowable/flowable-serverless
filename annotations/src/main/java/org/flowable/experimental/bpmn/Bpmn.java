@@ -16,4 +16,6 @@ public @interface Bpmn {
 
     String resource();
 
+    boolean enableEagerExecutionTreeFetching() default true;
+
 }

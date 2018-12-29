@@ -46,7 +46,6 @@ public class StartProcessFunction {
         BpmnModel bpmnModel = SimpleServiceTask.createSimpleServiceTaskBpmnModel();
 
         // TODO: move to processor?
-        bpmnModel.getMainProcess().setEnableEagerExecutionTreeFetching(true);
         bpmnModel.setEventSupport(new FlowableEventSupport());
 
         // This is trickier to move

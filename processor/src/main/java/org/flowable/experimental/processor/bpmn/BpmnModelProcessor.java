@@ -10,7 +10,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -23,6 +22,7 @@ import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.tools.FileObject;
 import javax.tools.StandardLocation;
@@ -70,8 +70,10 @@ public class BpmnModelProcessor extends AbstractProcessor {
 
     protected void processElement(Element element) {
         BpmnXMLConverter converter = new BpmnXMLConverter();
-        for (String resource : collectBpmnResources(element)) {
+        for (BpmnPropertyHolder propertyHolder : collectBpmnPropertyHolders(element)) {
+            String resource = propertyHolder.getResource();
             BpmnModel bpmnModel = converter.convertToBpmnModel(() -> getResourceStream(resource), true, true);
+            bpmnModel.getProcesses().forEach(process -> process.setEnableEagerExecutionTreeFetching(propertyHolder.isEnableEagerExecutionTreeFetching()));
 
             TypeSpec type = bpmnModelCreator.createType(bpmnModel)
                 .toBuilder()
@@ -132,23 +134,23 @@ public class BpmnModelProcessor extends AbstractProcessor {
             "resources" + '/' + classOutputLocation.getName());
     }
 
-    private Collection<String> collectBpmnResources(Element element) {
-        Set<String> bpmnResources = new HashSet<>();
+    private Collection<BpmnPropertyHolder> collectBpmnPropertyHolders(Element element) {
+        Set<BpmnPropertyHolder> bpmnResources = new HashSet<>();
         for (AnnotationMirror annotation : element.getAnnotationMirrors()) {
             if (annotation.getAnnotationType().toString().equals("org.flowable.experimental.bpmn.Bpmn")) {
-                getResource(annotation).ifPresent(bpmnResources::add);
+                getBpmnPropertyHolder(annotation).ifPresent(bpmnResources::add);
             } else if (annotation.getAnnotationType().toString().equals("org.flowable.experimental.bpmn.BpmnModels")) {
-                bpmnResources.addAll(getResourcesFromBpmnModels(annotation));
+                bpmnResources.addAll(getBpmnPropertyHolders(annotation));
             }
         }
 
         return bpmnResources;
     }
 
-    private List<String> getResourcesFromBpmnModels(AnnotationMirror annotationMirror) {
+    private List<BpmnPropertyHolder> getBpmnPropertyHolders(AnnotationMirror annotationMirror) {
         return extractValue(annotationMirror, "value")
             .flatMap(this::getBpmn)
-            .map(this::getResource)
+            .map(this::getBpmnPropertyHolder)
             .filter(Optional::isPresent)
             .map(Optional::get)
             .collect(Collectors.toList());
@@ -167,18 +169,43 @@ public class BpmnModelProcessor extends AbstractProcessor {
         return Stream.of((AnnotationMirror) value);
     }
 
-    private Optional<String> getResource(AnnotationMirror annotation) {
-        return extractValue(annotation, "resource")
-            .map(this::getBpmnResource)
-            .findAny();
+    private Optional<BpmnPropertyHolder> getBpmnPropertyHolder(AnnotationMirror annotation) {
+        BpmnPropertyHolder.Builder builder = new BpmnPropertyHolder.Builder();
+        for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : processingEnv.getElementUtils().getElementValuesWithDefaults(annotation).entrySet()) {
+            String annotationName = entry.getKey().getSimpleName().toString();
+            AnnotationValue annotationValue = entry.getValue();
+            if (annotationName.equals("resource")) {
+                builder.resource(getAnnotationValueAsString(annotationValue));
+            } else if (annotationName.equals("enableEagerExecutionTreeFetching")) {
+                builder.enableEagerExecutionTreeFetching(getAnnotationValueAsBoolean(annotationValue));
+            }
+        }
+
+        if (builder.hasResource()) {
+            return Optional.of(builder.create());
+        } else {
+            return Optional.empty();
+        }
     }
 
-    private String getBpmnResource(AnnotationValue annotationValue) {
+    private String getAnnotationValueAsString(AnnotationValue annotationValue) {
         if (annotationValue == null) {
             return null;
         }
 
         return annotationValue.getValue().toString();
+    }
+
+    private boolean getAnnotationValueAsBoolean(AnnotationValue annotationValue) {
+        if (annotationValue == null) {
+            return false;
+        }
+
+        Object value = annotationValue.getValue();
+        if (value instanceof Boolean) {
+            return (boolean) value;
+        }
+        return false;
     }
 
     private Stream<AnnotationValue> extractValue(AnnotationMirror annotation, String valueName) {

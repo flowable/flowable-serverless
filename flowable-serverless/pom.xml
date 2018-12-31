@@ -9,26 +9,9 @@
         <version>6.4.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>flowable-processor-sample</artifactId>
-
-    <properties>
-        <!-- Skip deployment of the sample -->
-        <maven.deploy.skip>true</maven.deploy.skip>
-    </properties>
+    <artifactId>flowable-serverless</artifactId>
 
     <dependencies>
-        <dependency>
-            <groupId>org.flowable.experimental</groupId>
-            <artifactId>flowable-processor-annotations</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.flowable.experimental</groupId>
-            <artifactId>flowable-processor</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.flowable.experimental</groupId>
-            <artifactId>flowable-serverless</artifactId>
-        </dependency>
 
         <dependency>
             <groupId>org.flowable</groupId>

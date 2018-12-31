@@ -2,12 +2,11 @@ package experiment;
 
 import org.flowable.bpmn.model.BpmnModel;
 import org.flowable.common.engine.impl.event.FlowableEventSupport;
-import org.flowable.common.engine.impl.persistence.deploy.DeploymentCache;
 import org.flowable.engine.ProcessEngine;
-import org.flowable.engine.impl.persistence.deploy.ProcessDefinitionCacheEntry;
-import org.flowable.engine.impl.persistence.entity.ProcessDefinitionEntityImpl;
-import org.flowable.engine.repository.ProcessDefinition;
 import org.flowable.sample.SimpleServiceTask;
+import org.flowable.serverless.NoDbProcessEngineConfiguration;
+import org.flowable.serverless.ServerlessProcessDefinitionUtil;
+import org.flowable.serverless.Util;
 
 /**
  * The purpose of this experiment is to build a simple 'function' that starts a process definition.
@@ -32,17 +31,12 @@ public class StartProcessFunction {
 
     public static ProcessEngine processEngine;
 
-    public static String PROCESS_DEFINITION_ID = "theProcess";
-
-    public static ProcessDefinition PROCESS_DEFINITION;
-
     static {
 
         long start = System.currentTimeMillis();
 
         NoDbProcessEngineConfiguration engineConfiguration = new NoDbProcessEngineConfiguration();
         processEngine = engineConfiguration.buildProcessEngine();
-
         BpmnModel bpmnModel = SimpleServiceTask.createSimpleServiceTaskBpmnModel();
 
         // TODO: move to processor?
@@ -53,23 +47,17 @@ public class StartProcessFunction {
 
         // END TODO
 
-        PROCESS_DEFINITION = new ProcessDefinitionEntityImpl();
-        ((ProcessDefinitionEntityImpl) PROCESS_DEFINITION).setId(PROCESS_DEFINITION_ID);
-        ProcessDefinitionCacheEntry cacheEntry = new ProcessDefinitionCacheEntry(PROCESS_DEFINITION, bpmnModel, bpmnModel.getMainProcess());
-
-        DeploymentCache<ProcessDefinitionCacheEntry> processDefinitionCache = engineConfiguration.getProcessDefinitionCache();
-        processDefinitionCache.add(PROCESS_DEFINITION_ID, cacheEntry);
+        ServerlessProcessDefinitionUtil.deployServerlessProcessDefinition(bpmnModel, engineConfiguration);
 
         long end = System.currentTimeMillis();
         System.out.println("Engine booted up in " + (end - start) + " ms");
-        // TODO: bootup time can be improved
     }
 
     public static void main(String[] args) {
         int nrOfInstances = 100000;
         long start = System.currentTimeMillis();
         for (int i = 0; i < nrOfInstances; i++) {
-            processEngine.getRuntimeService().startProcessInstanceById(PROCESS_DEFINITION_ID);
+            processEngine.getRuntimeService().startProcessInstanceById(ServerlessProcessDefinitionUtil.PROCESS_DEFINITION_ID);
         }
         long end = System.currentTimeMillis();
 

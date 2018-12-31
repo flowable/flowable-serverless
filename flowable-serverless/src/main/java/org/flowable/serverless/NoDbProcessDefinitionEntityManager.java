@@ -1,4 +1,4 @@
-package experiment;
+package org.flowable.serverless;
 
 import java.util.List;
 import java.util.Map;
@@ -69,7 +69,7 @@ public class NoDbProcessDefinitionEntityManager implements ProcessDefinitionEnti
     }
     @Override
     public ProcessDefinitionEntity findById(String entityId) {
-        return (ProcessDefinitionEntity) StartProcessFunction.PROCESS_DEFINITION;
+        return (ProcessDefinitionEntity) ServerlessProcessDefinitionUtil.PROCESS_DEFINITION;
     }
     @Override
     public void insert(ProcessDefinitionEntity entity) {

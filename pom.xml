@@ -10,7 +10,14 @@
     <modules>
         <module>annotations</module>
         <module>processor</module>
+        <module>flowable-serverless</module>
+
         <module>sample</module>
+
+        <module>spring-boot-sample</module>
+
+        <module>micronaut-sample</module>
+        <module>micronaut-sample-process</module>
     </modules>
 
     <packaging>pom</packaging>
@@ -42,6 +49,11 @@
             <dependency>
                 <groupId>org.flowable.experimental</groupId>
                 <artifactId>flowable-processor</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.flowable.experimental</groupId>
+                <artifactId>flowable-serverless</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -80,6 +92,7 @@
                 <groupId>org.xmlunit</groupId>
                 <artifactId>xmlunit-assertj</artifactId>
                 <version>${xmlunit.version}</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

@@ -1,0 +1,16 @@
+[ {
+  "name" : "org.flowable.engine.impl.persistence.entity.ExecutionEntityImpl",
+  "allPublicMethods" : true,
+  "allDeclaredConstructors" : true
+  },
+  {
+    "name" : "java.util.HashMap",
+    "allPublicMethods" : true,
+    "allDeclaredConstructors" : true
+  },
+  {
+    "name" : "org.flowable.common.engine.impl.de.odysseus.el.ExpressionFactoryImpl",
+    "allPublicMethods" : true,
+    "allDeclaredConstructors" : true
+  }
+]

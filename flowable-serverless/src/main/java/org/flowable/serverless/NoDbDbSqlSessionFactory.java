@@ -89,5 +89,9 @@ public class NoDbDbSqlSessionFactory extends DbSqlSessionFactory {
 
         }
 
+        @Override
+        public void flush() {
+
+        }
     }
 }

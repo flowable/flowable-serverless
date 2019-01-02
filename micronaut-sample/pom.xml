@@ -109,6 +109,11 @@
         </exclusion>
       </exclusions>
     </dependency>
+    <dependency>
+      <groupId>org.flowable</groupId>
+      <artifactId>flowable-http</artifactId>
+      <version>6.4.0</version>
+    </dependency>
 
     <dependency>
       <groupId>org.flowable.experimental</groupId>
@@ -130,6 +135,7 @@
 
   </dependencies>
   <build>
+    <finalName>flowable-micronaut-app</finalName>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

@@ -5,6 +5,7 @@
   <artifactId>micronaut-sample-app</artifactId>
   <version>1.0-SNAPSHOT</version>
   <build>
+    <finalName>flowable-micronaut-app</finalName>
     <pluginManagement>
       <plugins>
         <plugin>

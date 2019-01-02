@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Modifier;
@@ -15,9 +16,11 @@ import org.flowable.bpmn.model.BpmnModel;
 import org.flowable.bpmn.model.EndEvent;
 import org.flowable.bpmn.model.Event;
 import org.flowable.bpmn.model.ExtensionAttribute;
+import org.flowable.bpmn.model.FieldExtension;
 import org.flowable.bpmn.model.FlowElement;
 import org.flowable.bpmn.model.Gateway;
 import org.flowable.bpmn.model.HasExtensionAttributes;
+import org.flowable.bpmn.model.HttpServiceTask;
 import org.flowable.bpmn.model.ManualTask;
 import org.flowable.bpmn.model.Process;
 import org.flowable.bpmn.model.ReceiveTask;
@@ -34,12 +37,18 @@ import org.flowable.engine.impl.bpmn.behavior.NoneStartEventActivityBehavior;
 import org.flowable.engine.impl.bpmn.helper.ClassDelegate;
 
 import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeSpec;
+
+import temp.CustomHttpActivityBehavior;
+import temp.TempServiceTaskExpressionActivityBehavior;
 
 /**
  * @author Filip Hrisafov
  */
 public class BpmnModelCreator {
+
+    protected static AtomicInteger COUNTER = new AtomicInteger(1);
 
     protected final ProcessingEnvironment environment;
 
@@ -337,37 +346,78 @@ public class BpmnModelCreator {
         }
     }
 
-    protected void addServiceTaskFlowElement(ServiceTask serviceTaskFlow, MethodSpec.Builder methodBuilder, String elementName,
+    protected void addServiceTaskFlowElement(ServiceTask serviceTask, MethodSpec.Builder methodBuilder, String elementName,
         Map<String, MethodSpec> sharedMethods) {
-        if (serviceTaskFlow.getClass().equals(ServiceTask.class)) {
+
+        if (serviceTask.getClass().equals(ServiceTask.class)) {
             MethodSpec createServiceTaskMethod = sharedMethods
                 .computeIfAbsent("createServiceTaskFlow", this::createServiceTaskFlowElement);
-            methodBuilder.addStatement("$L.addFlowElement($N($S, $S, $S, $S, $S, $S, $S, $S, $S, $S, $L, $L, $L, $L, $S, $L, $L, $L))",
+            methodBuilder.addStatement("$L.addFlowElement($N($S, $S, $S, $S, $S, $S, $S, $S, $S, $S, $L, $L, $L, $L, $S, $L, $L, $L, null))",
                 elementName, createServiceTaskMethod,
-                serviceTaskFlow.getId(),
-                serviceTaskFlow.getName(),
-                serviceTaskFlow.getDocumentation(),
+                serviceTask.getId(),
+                serviceTask.getName(),
+                serviceTask.getDocumentation(),
 
-                serviceTaskFlow.getImplementation(),
-                serviceTaskFlow.getImplementationType(),
-                serviceTaskFlow.getResultVariableName(),
-                serviceTaskFlow.getType(),
-                serviceTaskFlow.getOperationRef(),
-                serviceTaskFlow.getExtensionId(),
-                serviceTaskFlow.getSkipExpression(),
-                serviceTaskFlow.isUseLocalScopeForResultVariable(),
-                serviceTaskFlow.isTriggerable(),
+                serviceTask.getImplementation(),
+                serviceTask.getImplementationType(),
+                serviceTask.getResultVariableName(),
+                serviceTask.getType(),
+                serviceTask.getOperationRef(),
+                serviceTask.getExtensionId(),
+                serviceTask.getSkipExpression(),
+                serviceTask.isUseLocalScopeForResultVariable(),
+                serviceTask.isTriggerable(),
 
-                serviceTaskFlow.isAsynchronous(),
-                serviceTaskFlow.isExclusive(),
-                serviceTaskFlow.getDefaultFlow(),
-                serviceTaskFlow.isForCompensation(),
-                serviceTaskFlow.getXmlRowNumber(),
-                serviceTaskFlow.getXmlColumnNumber()
+                serviceTask.isAsynchronous(),
+                serviceTask.isExclusive(),
+                serviceTask.getDefaultFlow(),
+                serviceTask.isForCompensation(),
+                serviceTask.getXmlRowNumber(),
+                serviceTask.getXmlColumnNumber()
             );
+        } else if (serviceTask.getClass().equals(HttpServiceTask.class)) {
+
+            HttpServiceTask httpServiceTask = (HttpServiceTask) serviceTask;
+
+            String mapName = "serviceTaskExtensions" + COUNTER.getAndIncrement();
+            methodBuilder.addStatement("java.util.Map<String, String> " + mapName + " = new java.util.HashMap<String, String>()");
+            if (httpServiceTask.getFieldExtensions() != null) {
+                for (FieldExtension fieldExtension : httpServiceTask.getFieldExtensions()) {
+                    String value = fieldExtension.getStringValue() != null ? fieldExtension.getStringValue() : fieldExtension.getExpression();
+                    methodBuilder.addStatement(mapName + ".put($S, $S)", fieldExtension.getFieldName(), value);
+                }
+            }
+
+            MethodSpec createServiceTaskMethod = sharedMethods
+                .computeIfAbsent("createServiceTaskFlow", this::createServiceTaskFlowElement);
+            methodBuilder.addStatement("$L.addFlowElement($N($S, $S, $S, $S, $S, $S, $S, $S, $S, $S, $L, $L, $L, $L, $S, $L, $L, $L, $L))",
+                elementName, createServiceTaskMethod,
+                serviceTask.getId(),
+                serviceTask.getName(),
+                serviceTask.getDocumentation(),
+
+                null,
+                "http",
+                serviceTask.getResultVariableName(),
+                serviceTask.getType(),
+                serviceTask.getOperationRef(),
+                serviceTask.getExtensionId(),
+                serviceTask.getSkipExpression(),
+                serviceTask.isUseLocalScopeForResultVariable(),
+                serviceTask.isTriggerable(),
+
+                serviceTask.isAsynchronous(),
+                serviceTask.isExclusive(),
+                serviceTask.getDefaultFlow(),
+                serviceTask.isForCompensation(),
+                serviceTask.getXmlRowNumber(),
+                serviceTask.getXmlColumnNumber(),
+                mapName
+            );
+
         } else {
             // using equals for the class as it is easy to make a mistake with different extensions of a ServiceTask
-            throw new FlowableIllegalArgumentException("Service task type " + serviceTaskFlow.getClass() + " not yet supported");
+            throw new FlowableIllegalArgumentException("Service task type " + serviceTask.getClass() + " not yet supported");
         }
     }
 
@@ -620,7 +670,15 @@ public class BpmnModelCreator {
             .addParameter(boolean.class, "forCompensation")
             .addParameter(int.class, "xmlRowNumber")
             .addParameter(int.class, "xmlColumnNumber")
-            .addStatement("$1T serviceTask = new $1T()", ServiceTask.class)
+            .addParameter(ParameterizedTypeName.get(Map.class, String.class, String.class), "extensions")
+
+            .addStatement("$1T serviceTask = null", ServiceTask.class)
+            .beginControlFlow("if (implementationType != null && \"http\".equals(implementationType))")
+                .addStatement("serviceTask = new $1T()", HttpServiceTask.class)
+            .nextControlFlow("else")
+                .addStatement("serviceTask = new $1T()", ServiceTask.class)
+            .endControlFlow()
+
             .addStatement("serviceTask.setId(id)")
             .addStatement("serviceTask.setName(name)")
             .addStatement("serviceTask.setDocumentation(documentation)")
@@ -642,8 +700,24 @@ public class BpmnModelCreator {
             .addStatement("serviceTask.setXmlRowNumber(xmlRowNumber)")
             .addStatement("serviceTask.setXmlColumnNumber(xmlColumnNumber)")
 
-            // TODO: only supporting class at the moment
-            .addStatement("serviceTask.setBehavior(new $T(serviceTask.getImplementation(), java.util.Collections.emptyList()))", ClassDelegate.class) // TODO: not the proper place - don't really want the dependency on flowable-engine?
+            .beginControlFlow("if (extensions != null)")
+            .beginControlFlow("for (String key : extensions.keySet())")
+            .addStatement("$T fieldExtension = new $T()", FieldExtension.class, FieldExtension.class)
+            .addStatement("fieldExtension.setFieldName(key)")
+            .addStatement("fieldExtension.setExpression(extensions.get(key))")
+            .addStatement("serviceTask.getFieldExtensions().add(fieldExtension)")
+            .endControlFlow()
+            .endControlFlow()
+
+            .beginControlFlow("if (implementationType != null && \"http\".equals(implementationType))")
+                .addStatement("serviceTask.setType(\"http\")")
+//                .addStatement("serviceTask.setBehavior(new $T())", HttpActivityBehaviorImpl.class)
+                .addStatement("serviceTask.setBehavior(new $T(serviceTask))", CustomHttpActivityBehavior.class)
+            .nextControlFlow("else if (implementationType.equals(\"expression\"))")
+                .addStatement("serviceTask.setBehavior(new $T(serviceTask, implementation))", TempServiceTaskExpressionActivityBehavior.class)
+            .nextControlFlow("else")
+                .addStatement("serviceTask.setBehavior(new $T(serviceTask.getImplementation(), new java.util.ArrayList< org.flowable.engine.impl.bpmn.parser.FieldDeclaration >()))", ClassDelegate.class) // TODO: not the proper place - don't really want the dependency on flowable-engine?
+            .endControlFlow()
 
             .addStatement("return serviceTask")
             .build();

@@ -73,6 +73,11 @@
                 <artifactId>flowable-engine</artifactId>
                 <version>${org.flowable.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.flowable</groupId>
+                <artifactId>flowable-http</artifactId>
+                <version>${org.flowable.version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>com.squareup</groupId>

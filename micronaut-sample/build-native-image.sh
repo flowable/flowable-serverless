@@ -1,16 +1,18 @@
 ./mvnw package
-java -cp target/micronaut-sample-app-1.0-SNAPSHOT.jar io.micronaut.graal.reflect.GraalClassLoadingAnalyzer
+java -cp target/flowable-micronaut-app.jar io.micronaut.graal.reflect.GraalClassLoadingAnalyzer
 native-image --no-server \
              --allow-incomplete-classpath \
              --delay-class-initialization-to-runtime=sun.font.SunLayoutEngine \
              --delay-class-initialization-to-runtime=io.netty.handler.ssl.util.BouncyCastleSelfSignedCertGenerator \
              --delay-class-initialization-to-runtime=io.netty.handler.ssl.JdkNpnApplicationProtocolNegotiator \
              --delay-class-initialization-to-runtime=io.netty.handler.ssl.ReferenceCountedOpenSslEngine \
-             --class-path target/micronaut-sample-app-1.0-SNAPSHOT.jar \
-             -H:ReflectionConfigurationFiles=target/reflect.json \
+             --enable-url-protocols=https \
+             --enable-all-security-services \
+             --class-path target/flowable-micronaut-app.jar \
+             -H:ReflectionConfigurationFiles=target/reflect.json,target/classes/custom-reflect.json \
              -H:EnableURLProtocols=http \
              -H:IncludeResources="logback.xml|application.yml|META-INF/services/*.*" \
-             -H:Name=micronaut-sample-app \
+             -H:Name=flowable-micronaut-app \
              -H:Class=org.flowable.app.Application \
              -H:+ReportUnsupportedElementsAtRuntime \
              -H:+AllowVMInspection \

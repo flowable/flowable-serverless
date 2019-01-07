@@ -42,7 +42,7 @@ public class ProcessController {
 
             @Override
             public BpmnModel execute(CommandContext commandContext) {
-                return org.flowable.app.TestProcessExample.createTestProcessExampleBpmnModel();
+                return TestProcessExample.createTestProcessExampleBpmnModel();
             }
         });
 

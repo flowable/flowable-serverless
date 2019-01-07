@@ -1,3 +1,5 @@
 micronaut:
     application:
         name: my-app
+    server:
+        port: 8083

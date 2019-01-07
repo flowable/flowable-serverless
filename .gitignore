@@ -8,3 +8,5 @@ target/
 .settings
 .DS_Store
 .vscode
+flowable-micronaut-app
+libsunec.dylib

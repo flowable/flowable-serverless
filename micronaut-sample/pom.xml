@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.flowable.experimental</groupId>
+
+  <parent>
+    <groupId>org.flowable.experimental</groupId>
+    <artifactId>flowable-serverless-parent</artifactId>
+    <version>6.4.0-SNAPSHOT</version>
+  </parent>
+
   <artifactId>micronaut-sample-app</artifactId>
-  <version>1.0-SNAPSHOT</version>
 
   <properties>
     <micronaut.version>1.0.2</micronaut.version>
@@ -92,7 +97,6 @@
     <dependency>
       <groupId>org.flowable</groupId>
       <artifactId>flowable-engine</artifactId>
-      <version>6.4.0</version>
       <!-- Following exclusions needed to make GraalVM native image work -->
       <exclusions>
         <exclusion>
@@ -112,19 +116,17 @@
     <dependency>
       <groupId>org.flowable</groupId>
       <artifactId>flowable-http</artifactId>
-      <version>6.4.0</version>
     </dependency>
 
     <dependency>
       <groupId>org.flowable.experimental</groupId>
       <artifactId>micronaut-sample-process</artifactId>
-      <version>1.0-SNAPSHOT</version>
+      <version>${project.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.flowable.experimental</groupId>
       <artifactId>flowable-serverless</artifactId>
-      <version>${flowable.processor.version}</version>
       <exclusions>
         <exclusion>
           <groupId>org.flowable</groupId>
@@ -179,7 +181,6 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.7.0</version>
           <configuration>
             <source>${jdk.version}</source>
             <target>${jdk.version}</target>

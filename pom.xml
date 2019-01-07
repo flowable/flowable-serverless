@@ -27,10 +27,20 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
 
+        <org.apache.maven.plugins.clean.version>3.1.0</org.apache.maven.plugins.clean.version>
         <org.apache.maven.plugins.compiler.version>3.8.0</org.apache.maven.plugins.compiler.version>
+        <org.apache.maven.plugins.dependency.version>3.1.1</org.apache.maven.plugins.dependency.version>
+        <org.apache.maven.plugins.deploy.version>2.8.2</org.apache.maven.plugins.deploy.version>
         <org.apache.maven.plugins.gpg.version>1.6</org.apache.maven.plugins.gpg.version>
+        <org.apache.maven.plugins.help.version>3.1.0</org.apache.maven.plugins.help.version>
+        <org.apache.maven.plugins.install.version>2.5.2</org.apache.maven.plugins.install.version>
+        <org.apache.maven.plugins.jar.version>3.1.0</org.apache.maven.plugins.jar.version>
         <org.apache.maven.plugins.javadoc.version>3.0.1</org.apache.maven.plugins.javadoc.version>
+        <org.apache.maven.plugins.resources.version>3.1.0</org.apache.maven.plugins.resources.version>
         <org.apache.maven.plugins.source.version>3.0.1</org.apache.maven.plugins.source.version>
+        <org.apache.maven.plugins.source.version>3.0.1</org.apache.maven.plugins.source.version>
+        <org.apache.maven.plugins.surefire.version>2.22.1</org.apache.maven.plugins.surefire.version>
+        <org.apache.maven.plugins.war.version>3.2.2</org.apache.maven.plugins.war.version>
 
         <org.flowable.version>6.4.0</org.flowable.version>
         <javapoet.version>1.11.1</javapoet.version>
@@ -106,13 +116,23 @@
         <pluginManagement>
             <plugins>
                 <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-source-plugin</artifactId>
-                    <version>${org.apache.maven.plugins.source.version}</version>
+                    <artifactId>maven-clean-plugin</artifactId>
+                    <version>${org.apache.maven.plugins.clean.version}</version>
                 </plugin>
                 <plugin>
-                    <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>${org.apache.maven.plugins.javadoc.version}</version>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>${org.apache.maven.plugins.compiler.version}</version>
+                    <configuration>
+                        <parameters>true</parameters>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-deploy-plugin</artifactId>
+                    <version>${org.apache.maven.plugins.deploy.version}</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <version>${org.apache.maven.plugins.dependency.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -120,9 +140,36 @@
                     <version>${org.apache.maven.plugins.gpg.version}</version>
                 </plugin>
                 <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <version>${org.apache.maven.plugins.compiler.version}</version>
+                    <artifactId>maven-install-plugin</artifactId>
+                    <version>${org.apache.maven.plugins.install.version}</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-help-plugin</artifactId>
+                    <version>${org.apache.maven.plugins.help.version}</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>${org.apache.maven.plugins.jar.version}</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>${org.apache.maven.plugins.javadoc.version}</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <version>${org.apache.maven.plugins.resources.version}</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-source-plugin</artifactId>
+                    <version>${org.apache.maven.plugins.source.version}</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${org.apache.maven.plugins.surefire.version}</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-war-plugin</artifactId>
+                    <version>${org.apache.maven.plugins.war.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>

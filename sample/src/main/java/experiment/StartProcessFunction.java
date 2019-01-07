@@ -37,6 +37,9 @@ public class StartProcessFunction {
 
         NoDbProcessEngineConfiguration engineConfiguration = new NoDbProcessEngineConfiguration();
         processEngine = engineConfiguration.buildProcessEngine();
+        System.out.println("Engine built in " + (System.currentTimeMillis() - start) + " ms");
+
+        long bpmnModelStart = System.currentTimeMillis();
         BpmnModel bpmnModel = SimpleServiceTask.createSimpleServiceTaskBpmnModel();
 
         // TODO: move to processor?
@@ -48,6 +51,8 @@ public class StartProcessFunction {
         // END TODO
 
         ServerlessProcessDefinitionUtil.deployServerlessProcessDefinition(bpmnModel, engineConfiguration);
+
+        System.out.println("BpmnModel initialized in  " + (System.currentTimeMillis() - bpmnModelStart) + " ms");
 
         long end = System.currentTimeMillis();
         System.out.println("Engine booted up in " + (end - start) + " ms");

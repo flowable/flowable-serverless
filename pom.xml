@@ -15,9 +15,11 @@
         <module>sample</module>
 
         <module>spring-boot-sample</module>
+        <module>spring-cloud-aws-sample</module>
 
         <module>micronaut-sample</module>
         <module>micronaut-sample-process</module>
+
     </modules>
 
     <packaging>pom</packaging>

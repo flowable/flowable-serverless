@@ -27,7 +27,7 @@ import experiment.MyJavaDelegate;
 
 /**
  * Build and run with
- * java -noverify -jar flowable-processor-spring-boot-sample-6.4.0-SNAPSHOT.jar
+ * java -noverify -jar flowable-function-spring-boot-sample-6.4.0-SNAPSHOT.jar
  *
  * Try with curl localhost:8080 -d test
  */

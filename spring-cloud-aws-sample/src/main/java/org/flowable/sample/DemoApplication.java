@@ -20,13 +20,17 @@ import org.flowable.engine.ProcessEngine;
 import org.flowable.serverless.NoDbProcessEngineConfiguration;
 import org.flowable.serverless.ServerlessProcessDefinitionUtil;
 import org.flowable.serverless.Util;
-import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.cloud.function.context.FunctionalSpringApplication;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
 
 import experiment.MyJavaDelegate;
 
-@SpringBootConfiguration
-public class DemoApplication implements Function<String, String> {
+/**
+ * Build AWS specific jar (with aws suffix) using 'mvn clean package'
+ */
+@SpringBootApplication
+public class DemoApplication {
 
   public static ProcessEngine processEngine;
 
@@ -52,15 +56,16 @@ public class DemoApplication implements Function<String, String> {
     System.out.println("Flowable engine booted up in " + (end - start) + " ms");
   }
 
-
   public static void main(String[] args) {
-    FunctionalSpringApplication.run(DemoApplication.class, args);
+    SpringApplication.run(DemoApplication.class, args);
   }
 
-  @Override
-  public String apply(String value) {
-    String processInstanceId = processEngine.getRuntimeService().startProcessInstanceById(ServerlessProcessDefinitionUtil.PROCESS_DEFINITION_ID).getId();
-    return "[Spring Cloud] - new process instance " + processInstanceId + " started. Number of delegation executions = " + MyJavaDelegate.COUNTER.get();
+  @Bean
+  public Function<FunctionInput, String> startProcess() {
+    return value -> {
+      String processInstanceId = processEngine.getRuntimeService().startProcessInstanceById(ServerlessProcessDefinitionUtil.PROCESS_DEFINITION_ID).getId();
+      return "[Spring Cloud] - new process instance " + processInstanceId + " started. Number of delegation executions = " + MyJavaDelegate.COUNTER.get();
+    };
   }
 
 }

@@ -14,6 +14,11 @@ package org.flowable.sample;
 
 import org.springframework.cloud.function.adapter.aws.SpringBootRequestHandler;
 
-public class StartProcessRequestHandler extends SpringBootRequestHandler<String, String> {
+public class StartProcessRequestHandler extends SpringBootRequestHandler<FunctionInput, String> {
+
+    // Needed as MAIN_CLASS (see SpringFunctionInitializer) can't be found
+    public StartProcessRequestHandler() {
+        super(DemoApplication.class);
+    }
 
 }

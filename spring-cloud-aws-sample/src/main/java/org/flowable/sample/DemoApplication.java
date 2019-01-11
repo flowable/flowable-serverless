@@ -22,7 +22,11 @@ import org.flowable.serverless.ServerlessProcessDefinitionUtil;
 import org.flowable.serverless.Util;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.function.context.FunctionRegistration;
+import org.springframework.cloud.function.context.FunctionType;
+import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.support.GenericApplicationContext;
 
 import experiment.MyJavaDelegate;
 
@@ -30,7 +34,7 @@ import experiment.MyJavaDelegate;
  * Build AWS specific jar (with aws suffix) using 'mvn clean package'
  */
 @SpringBootApplication
-public class DemoApplication {
+public class DemoApplication implements ApplicationContextInitializer<GenericApplicationContext> {
 
   public static ProcessEngine processEngine;
 
@@ -60,7 +64,6 @@ public class DemoApplication {
     SpringApplication.run(DemoApplication.class, args);
   }
 
-  @Bean
   public Function<FunctionInput, String> startProcess() {
     return value -> {
       String processInstanceId = processEngine.getRuntimeService().startProcessInstanceById(ServerlessProcessDefinitionUtil.PROCESS_DEFINITION_ID).getId();
@@ -68,4 +71,10 @@ public class DemoApplication {
     };
   }
 
+  @Override
+  public void initialize(GenericApplicationContext genericApplicationContext) {
+    genericApplicationContext.registerBean("startProcess", FunctionRegistration.class,
+        () -> new FunctionRegistration<Function<FunctionInput, String>>(startProcess())
+            .type(FunctionType.from(FunctionInput.class).to(String.class).getType()));
+  }
 }

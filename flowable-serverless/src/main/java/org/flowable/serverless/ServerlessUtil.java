@@ -13,7 +13,11 @@
 package org.flowable.serverless;
 
 import org.flowable.bpmn.model.BpmnModel;
+import org.flowable.common.engine.impl.event.FlowableEventSupport;
+import org.flowable.common.engine.impl.interceptor.Command;
+import org.flowable.common.engine.impl.interceptor.CommandContext;
 import org.flowable.common.engine.impl.persistence.deploy.DeploymentCache;
+import org.flowable.engine.ProcessEngine;
 import org.flowable.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.flowable.engine.impl.persistence.deploy.ProcessDefinitionCacheEntry;
 import org.flowable.engine.impl.persistence.entity.ProcessDefinitionEntityImpl;
@@ -22,11 +26,36 @@ import org.flowable.engine.repository.ProcessDefinition;
 /**
  * For demo purposes, quick access to proc def.
  */
-public class ServerlessProcessDefinitionUtil {
+public class ServerlessUtil {
 
     public static String PROCESS_DEFINITION_ID = "theProcess";
 
     public static ProcessDefinition PROCESS_DEFINITION;
+
+    public static ProcessEngine initializeProcessEngineForBpmnModel(Command<BpmnModel> bpmnModelCommand) {
+
+        long start = System.currentTimeMillis();
+
+        NoDbProcessEngineConfiguration engineConfiguration = new NoDbProcessEngineConfiguration();
+        ProcessEngine processEngine = engineConfiguration.buildProcessEngine();
+
+        BpmnModel bpmnModel = processEngine.getManagementService().executeCommand(bpmnModelCommand);
+
+        // TODO: move to processor?
+        bpmnModel.setEventSupport(new FlowableEventSupport());
+
+        // This is trickier to move
+        Util.processFlowElements(bpmnModel.getMainProcess().getFlowElements(), bpmnModel.getMainProcess());
+
+        // END TODO
+
+        ServerlessUtil.deployServerlessProcessDefinition(bpmnModel, engineConfiguration);
+
+        long end = System.currentTimeMillis();
+        System.out.println("Flowable engine booted up in " + (end - start) + " ms");
+
+        return processEngine;
+    }
 
     public static void deployServerlessProcessDefinition(BpmnModel bpmnModel, ProcessEngineConfigurationImpl engineConfiguration) {
         PROCESS_DEFINITION = new ProcessDefinitionEntityImpl();

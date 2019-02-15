@@ -81,7 +81,7 @@ public class NoDbProcessDefinitionEntityManager implements ProcessDefinitionEnti
     }
     @Override
     public ProcessDefinitionEntity findById(String entityId) {
-        return (ProcessDefinitionEntity) ServerlessProcessDefinitionUtil.PROCESS_DEFINITION;
+        return (ProcessDefinitionEntity) ServerlessUtil.PROCESS_DEFINITION;
     }
     @Override
     public void insert(ProcessDefinitionEntity entity) {

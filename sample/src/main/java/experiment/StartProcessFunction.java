@@ -12,13 +12,9 @@
  */
 package experiment;
 
-import org.flowable.bpmn.model.BpmnModel;
-import org.flowable.common.engine.impl.event.FlowableEventSupport;
 import org.flowable.engine.ProcessEngine;
 import org.flowable.sample.SimpleServiceTask;
-import org.flowable.serverless.NoDbProcessEngineConfiguration;
-import org.flowable.serverless.ServerlessProcessDefinitionUtil;
-import org.flowable.serverless.Util;
+import org.flowable.serverless.ServerlessUtil;
 
 /**
  * The purpose of this experiment is to build a simple 'function' that starts a process definition.
@@ -41,40 +37,13 @@ import org.flowable.serverless.Util;
  */
 public class StartProcessFunction {
 
-    public static ProcessEngine processEngine;
-
-    static {
-
-        long start = System.currentTimeMillis();
-
-        NoDbProcessEngineConfiguration engineConfiguration = new NoDbProcessEngineConfiguration();
-        processEngine = engineConfiguration.buildProcessEngine();
-        System.out.println("Engine built in " + (System.currentTimeMillis() - start) + " ms");
-
-        long bpmnModelStart = System.currentTimeMillis();
-        BpmnModel bpmnModel = SimpleServiceTask.createSimpleServiceTaskBpmnModel();
-
-        // TODO: move to processor?
-        bpmnModel.setEventSupport(new FlowableEventSupport());
-
-        // This is trickier to move
-        Util.processFlowElements(bpmnModel.getMainProcess().getFlowElements(), bpmnModel.getMainProcess());
-
-        // END TODO
-
-        ServerlessProcessDefinitionUtil.deployServerlessProcessDefinition(bpmnModel, engineConfiguration);
-
-        System.out.println("BpmnModel initialized in  " + (System.currentTimeMillis() - bpmnModelStart) + " ms");
-
-        long end = System.currentTimeMillis();
-        System.out.println("Engine booted up in " + (end - start) + " ms");
-    }
+    public static ProcessEngine processEngine = ServerlessUtil.initializeProcessEngineForBpmnModel(commandContext -> SimpleServiceTask.createSimpleServiceTaskBpmnModel());;
 
     public static void main(String[] args) {
         int nrOfInstances = 100000;
         long start = System.currentTimeMillis();
         for (int i = 0; i < nrOfInstances; i++) {
-            processEngine.getRuntimeService().startProcessInstanceById(ServerlessProcessDefinitionUtil.PROCESS_DEFINITION_ID);
+            processEngine.getRuntimeService().startProcessInstanceById(ServerlessUtil.PROCESS_DEFINITION_ID);
         }
         long end = System.currentTimeMillis();
 

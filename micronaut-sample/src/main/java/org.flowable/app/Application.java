@@ -14,6 +14,14 @@ package org.flowable.app;
 
 import io.micronaut.runtime.Micronaut;
 
+/**
+ * Try with
+ *
+ * curl -X POST -H "Content-Type: text/plain" --data 1 localhost:8083/process
+ * curl -X POST -H "Content-Type: text/plain" --data 2 localhost:8083/process
+ *
+ * To build graalvm image, run ./build-native-image.sh
+ */
 public class Application {
 
     public static void main(String[] args) {

@@ -20,6 +20,8 @@
         <module>micronaut-sample</module>
         <module>micronaut-sample-process</module>
 
+        <module>spring-fu-sample</module>
+
     </modules>
 
     <packaging>pom</packaging>

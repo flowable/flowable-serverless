@@ -1,0 +1,17 @@
+[
+  {
+    "name": "com.flowable.sample.ProcessService",
+    "allDeclaredConstructors" : true,
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "com.flowable.sample.ProcessHandler",
+    "allDeclaredConstructors" : true,
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "experiment.MyJavaDelegate",
+    "allDeclaredConstructors" : true,
+    "allDeclaredMethods": true
+  }
+]

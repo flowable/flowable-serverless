@@ -1,11 +1,11 @@
 [
   {
-    "name": "com.flowable.sample.ProcessService",
+    "name": "org.flowable.sample.ProcessService",
     "allDeclaredConstructors" : true,
     "allDeclaredMethods": true
   },
   {
-    "name": "com.flowable.sample.ProcessHandler",
+    "name": "org.flowable.sample.ProcessHandler",
     "allDeclaredConstructors" : true,
     "allDeclaredMethods": true
   },

@@ -33,9 +33,9 @@ public class SpringFuApplication {
 
     public static JafuApplication app = webApplication(application -> {
 
-        application.beans(b -> {
-            b.bean(ProcessHandler.class);
-            b.bean(ProcessService.class);
+        application.beans(beanDefinition -> {
+            beanDefinition.bean(ProcessHandler.class);
+            beanDefinition.bean(ProcessService.class);
         });
 
         application.enable(server(server -> {
